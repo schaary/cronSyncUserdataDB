@@ -7,6 +7,34 @@ require 'thor'
 
 
 class SyncUserdataDB < Thor
+
+  desc 'fetch_umt','fetch_umt'
+  def fetch_umt
+    connect_umt
+
+    puts plsql.hissosexp.count
+  end
+
+  desc 'fetch_mysql','fetch_mysql'
+  def fetch_mysql
+  end
+
+private 
+  def connect_umt
+    plsql.connection = OCI8.new(
+      ENV.fetch('UMT_USER'),
+      ENV.fetch('UMT_PASSWORD'),
+      ENV.fetch('UMT_SID')
+    )
+  end
+
+  def connect_mysql
+    @mysql = Mysql2::Client.new(
+      host:     ENV.fetch('MYSQL_URZ_HOST'),
+      username: ENV.fetch('MYSQL_URZ_USER'),
+      password: ENV.fetch('MYSQL_URZ_PASSWORD')
+    )
+  end
 end
 
 SyncUserdataDB.start
