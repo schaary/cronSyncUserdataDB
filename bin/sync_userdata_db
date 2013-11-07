@@ -3,20 +3,18 @@
 
 require 'ruby-plsql'
 require 'mysql2'
+require 'awesome_print'
 require 'thor'
 
 
 class SyncUserdataDB < Thor
 
-  desc 'fetch_umt','fetch_umt'
-  def fetch_umt
-    connect_umt
-
-    puts plsql.hissosexp.count
-  end
+  MYSQL_TABLE_NAME = 'userdata_user_neu_tbl'
 
   desc 'fetch_mysql','fetch_mysql'
   def fetch_mysql
+    cleanup_mysql_table
+    sync_active_user
   end
 
 private 
@@ -29,11 +27,38 @@ private
   end
 
   def connect_mysql
-    @mysql = Mysql2::Client.new(
+    @mysql ||= Mysql2::Client.new(
       host:     ENV.fetch('MYSQL_URZ_HOST'),
       username: ENV.fetch('MYSQL_URZ_USER'),
-      password: ENV.fetch('MYSQL_URZ_PASSWORD')
+      password: ENV.fetch('MYSQL_URZ_PASSWORD'),
+      database: 'userdata_db'
     )
+  end
+
+  def cleanup_mysql_table
+    connect_mysql
+
+    @mysql.query("truncate table #{MYSQL_TABLE_NAME}")
+  end
+
+  def sync_active_user
+    connect_umt
+    connect_mysql
+
+    plsql.userdata_pkg.syncActiveUser do |cursor|
+      cursor.fetch_all.each do |record|
+        @mysql.query(
+          "insert into #{MYSQL_TABLE_NAME} " + 
+          "  (NKZ, VORNAME, NACHNAME, " +
+          "   USER_ID, GID, START_PW, " + 
+          "   MAIL, TYP, CREATED, MODIFIED) " +
+          "values " + 
+          "  ('#{record[0]}', '#{record[1]}', '#{record[2]}', " +
+          "    #{record[3].to_i}, #{record[4].to_i}, '#{record[5]}', " +
+          "   '#{record[6]}', '#{record[7]}', '#{record[8]}', '#{record[9]}')"
+        )
+      end
+    end
   end
 end
 
