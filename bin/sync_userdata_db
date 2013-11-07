@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+# encoding: UTF-8
+
+require 'ruby-plsql'
+require 'mysql2'
+require 'thor'
+
+
+class SyncUserdataDB < Thor
+end
+
+SyncUserdataDB.start
