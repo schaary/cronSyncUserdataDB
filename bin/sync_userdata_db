@@ -11,6 +11,7 @@ class SyncUserdataDB < Thor
 
   ACTIVE_USER_TABLE_NAME = 'userdata_user_neu_tbl'
   DELETED_USER_TABLE_NAME = 'userdata_deleted_neu_tbl'
+  DISABLED_USER_TABLE_NAME = 'userdata_disabled_neu_tbl'
   PASSWD_TABLE_NAME = 'userdata_passwd_neu_tbl'
 
   desc 'active_user','synchronize userdata_user_tbl'
@@ -23,6 +24,12 @@ class SyncUserdataDB < Thor
   def deleted_user
     cleanup_table DELETED_USER_TABLE_NAME
     sync_deleted_user
+  end
+
+  desc 'disabled_user','synchronize userdata_disabled_tbl'
+  def disabled_user
+    cleanup_table DISABLED_USER_TABLE_NAME
+    sync_disabled_user
   end
 
   desc 'passwd', 'synchronize userdata_passwd_tbl'
@@ -99,8 +106,20 @@ private
           "insert into #{PASSWD_TABLE_NAME} " + 
           "  (NKZ, CHECK_KEY, CREATED, MODIFIED) " + 
           "values " +
-          "  ('#{record[0]}','#{record[1]}','#{record[2]}','#{record[3]}')"
-        )
+          "  ('#{record[0]}','#{record[1]}','#{record[2]}','#{record[3]}')")
+      end
+    end
+  end
+
+  def sync_disabled_user
+    connect_umt
+    connect_mysql
+
+    plsql.userdata_pkg.syncDisabledUser do |cursor|
+      cursor.fetch_all.each do |record|
+        @mysql.query(
+          "insert into #{DISABLED_USER_TABLE_NAME} (NKZ, CREATED) " + 
+          "values ('#{record[0]}', '#{record[1]}')")
       end
     end
   end
