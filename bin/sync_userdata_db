@@ -9,11 +9,11 @@ require 'thor'
 
 class SyncUserdataDB < Thor
 
-  MYSQL_TABLE_NAME = 'userdata_user_neu_tbl'
+  ACTIVE_USER_TABLE_NAME = 'userdata_user_neu_tbl'
 
-  desc 'fetch_mysql','fetch_mysql'
-  def fetch_mysql
-    cleanup_mysql_table
+  desc 'active_user','synchronize userdata_user_tbl'
+  def active_user
+    cleanup_table ACTIVE_USER_TABLE_NAME
     sync_active_user
   end
 
@@ -35,10 +35,10 @@ private
     )
   end
 
-  def cleanup_mysql_table
+  def cleanup_table table_name
     connect_mysql
 
-    @mysql.query("truncate table #{MYSQL_TABLE_NAME}")
+    @mysql.query("truncate table #{table_name}")
   end
 
   def sync_active_user
@@ -48,7 +48,7 @@ private
     plsql.userdata_pkg.syncActiveUser do |cursor|
       cursor.fetch_all.each do |record|
         @mysql.query(
-          "insert into #{MYSQL_TABLE_NAME} " + 
+          "insert into #{ACTIVE_USER_TABLE_NAME} " + 
           "  (NKZ, VORNAME, NACHNAME, " +
           "   USER_ID, GID, START_PW, " + 
           "   MAIL, TYP, CREATED, MODIFIED) " +
@@ -60,6 +60,7 @@ private
       end
     end
   end
+
 end
 
 SyncUserdataDB.start
