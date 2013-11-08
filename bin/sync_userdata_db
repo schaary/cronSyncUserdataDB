@@ -10,11 +10,18 @@ require 'thor'
 class SyncUserdataDB < Thor
 
   ACTIVE_USER_TABLE_NAME = 'userdata_user_neu_tbl'
+  DELETED_USER_TABLE_NAME = 'userdata_deleted_neu_tbl'
 
   desc 'active_user','synchronize userdata_user_tbl'
   def active_user
     cleanup_table ACTIVE_USER_TABLE_NAME
     sync_active_user
+  end
+
+  desc 'deleted_user','synchronize userdata_deleted_tbl'
+  def deleted_user
+    cleanup_table DELETED_USER_TABLE_NAME
+    sync_deleted_user
   end
 
 private 
@@ -61,6 +68,19 @@ private
     end
   end
 
+  def sync_deleted_user
+    connect_umt
+    connect_mysql
+
+    plsql.userdata_pkg.syncDeletedUser do |cursor|
+      cursor.fetch_all.each do |record|
+        @mysql.query(
+          "insert into #{DELETED_USER_TABLE_NAME} (NKZ, CREATED) " +
+          "values ('#{record[0]}','#{record[1]}')"
+        )
+      end
+    end
+  end
 end
 
 SyncUserdataDB.start
